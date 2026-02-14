@@ -5,9 +5,9 @@ import { readFile } from "fs/promises";
 
 const s3 = new S3Client({
   region: "auto",
-  endpoint: "https://4a9b58644a8fcb9c1695071e4ab7d7e6.r2.cloudflarestorage.com",
+  endpoint: process.env.R2_API as string,
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY as string,
+    accessKeyId: process.env.R2_ACCESS_KEY_ID as string,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY as string
   }
 });
@@ -19,9 +19,9 @@ export async function uploadFile(
   const fileContent = await readFile(localFilePath);
 
   const command = new PutObjectCommand({
-    Bucket: "deploy",
+    Bucket: "store",
     Key: fileName,
-    Body: fileContent
+    Body: fileContent,
   });
 
   await s3.send(command);

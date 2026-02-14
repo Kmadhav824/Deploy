@@ -22,7 +22,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post('/deploy', async (req, res) => {
+app.post('/store', async (req, res) => {
   // Deployment logic
   const repoUrl=req.body.repoUrl;
   const id=generate();
@@ -32,13 +32,20 @@ app.post('/deploy', async (req, res) => {
   res.json({id});
 
   const files = getAllFiles(path.join(__dirname,`output/${id}`));
-  files.forEach(async file => {
-  const relativePath = path.relative(path.join(__dirname, `output/${id}`), file);
-  const key = `${id}/${relativePath}`;
-  await uploadFile(key, file);
-});
-  console.log(files);
-});
+  for (const file of files) {
+      const relativePath = path.relative(path.join(__dirname, `output/${id}`), file);
+      const key = `${id}/${relativePath}`;
+      
+      // We skip the .git folder to save time and bandwidth
+      if (relativePath.includes('.git')) continue;
+
+      await uploadFile(key, file);
+  }
+
+  // After all files are done, you can then tell Redis
+  publisher.lPush("build-queue", id);
+    console.log(files);
+  });
 
 app.listen(3000, () => {
   console.log('Server is running on port 3000');
